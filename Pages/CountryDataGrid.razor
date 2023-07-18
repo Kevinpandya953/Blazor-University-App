@@ -1,0 +1,110 @@
+﻿@page "/CountryDataGrid"
+@using BlazorApp2.Models;
+@using Syncfusion.Blazor.Data;
+@using Syncfusion.Blazor;
+@using System.Collections;
+@using Syncfusion.Blazor.Grids;
+@using BlazorApp2.Data
+@inject CountryServiceControllerService data;
+
+<SfGrid @ref="@Grid" TValue="Country" ID="Grid" AllowResizing="true" AllowSorting="true" AllowReordering="true" AllowGrouping="true" AllowPaging="true"  Toolbar="@(new List<string>() { "Search", "Add", "Edit","Update","Delete","Cancel" , "ExcelExport" })" AllowFiltering="true" AllowSelection="true" AllowExcelExport="true" Height="315">
+ <GridPageSettings PageSize="7"></GridPageSettings>
+<GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Menu"></GridFilterSettings>
+<SfDataManager AdaptorInstance="@typeof(CustomAdaptor)" Adaptor="Adaptors.CustomAdaptor"></SfDataManager>
+<GridEditSettings AllowAdding="true" AllowDeleting="true" AllowEditing="true" Mode="EditMode.Normal"></GridEditSettings>
+<GridEvents OnToolbarClick="ToolbarClick" TValue="Country"></GridEvents>
+  <GridColumns>
+	<GridColumn Field="CountryId"  HeaderText="CountryId" IsPrimaryKey="true"></GridColumn>
+	<GridColumn Field="CountryName"  HeaderText="CountryName" Type="ColumnType.String"></GridColumn>
+	<GridColumn Field="Campus"  HeaderText="Campus"></GridColumn>
+	<GridColumn Field="Faculty"  HeaderText="Faculty"></GridColumn>
+	<GridColumn Field="State"  HeaderText="State"></GridColumn>
+	<GridColumn Field="Student"  HeaderText="Student"></GridColumn>
+	<GridColumn Field="University"  HeaderText="University"></GridColumn>
+  </GridColumns>
+</SfGrid>
+
+@code{
+ 			public class CustomAdaptor : DataAdaptor
+		{
+			public CountryServiceControllerService data = new CountryServiceControllerService();
+
+			public override object Read(DataManagerRequest dm, string? key = null)
+			{
+							IEnumerable DataSource = data.GetAllCountry().ToList();
+					
+			if (dm.Search != null && dm.Search.Count > 0)
+			{
+				// Searching
+				DataSource = DataOperations.PerformSearching(DataSource, dm.Search);
+			}
+			if (dm.Sorted != null && dm.Sorted.Count > 0)
+			{
+				// Sorting
+				DataSource = DataOperations.PerformSorting(DataSource, dm.Sorted);
+			}
+			if (dm.Where != null && dm.Where.Count > 0)
+			{
+				// Filtering
+				DataSource = DataOperations.PerformFiltering(DataSource, dm.Where, dm.Where[0].Operator);
+			}
+						if (dm.Skip != 0)
+			{
+				//Paging
+				DataSource = DataOperations.PerformSkip(DataSource, dm.Skip);
+			}
+			if (dm.Take != 0)
+			{
+				DataSource = DataOperations.PerformTake(DataSource, dm.Take);
+			}
+							if (dm.Group != null && dm.Group.Any()) //Grouping 
+				{ 
+					foreach (var group in dm.Group) 
+					{ 
+						DataSource = DataUtil.Group<Country>(DataSource, group, dm.Aggregates, 0, dm.GroupByFormatter); 
+					} 
+				} 
+				int count = data.GetAllCountry().ToList().Count();
+									return dm.RequiresCounts ? new DataResult() { Result = DataSource, Count = count } : (object)DataSource;
+			}
+		
+						
+			public override object Insert(DataManager dataManager, object value, string key)
+			{
+				data.AddCountry((Country)value);
+				return value;
+			}
+			
+			public override object  Update(DataManager dataManager, object value, string keyField, string key)
+			{
+				data.UpdateCountry((Country)value);
+				return value;
+			}
+			public override object Remove(DataManager dataManager, object value, string keyField, string key)
+            {
+
+                var delData = data.GetAllCountry().Where(x => x.CountryId == (int)value).FirstOrDefault();
+
+                data.DeleteCountry((int)value);
+                return delData!;
+
+            }
+
+
+  }
+
+			
+	SfGrid<Country>? Grid;
+
+    public async Task ToolbarClick(Syncfusion.Blazor.Navigations.ClickEventArgs args)
+{
+    if (args.Item.Id == "Grid_excelexport")
+  {
+   await this.Grid!.ExportToExcelAsync();
+  }
+}
+}
+ 
+
+
+
